@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环境设置 - Agave Validator Documentation</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌪️</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="text" class="search-bar" placeholder="搜索文档..." id="searchInput">
+            <a href="index.html" class="back-link">← 返回首页</a>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <h1>⚡ 环境设置指南</h1>
+            <p class="subtitle">完整的Agave验证器构建环境配置教程</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="content">
+            <h2>🔧 系统要求</h2>
+            <div class="requirements-grid">
+                <div class="requirement-card">
+                    <h3>硬件配置</h3>
+                    <ul>
+                        <li>CPU: 12核心/24线程</li>
+                        <li>内存: 最少32GB，推荐128GB</li>
+                        <li>存储: 2TB NVMe SSD</li>
+                        <li>网络: 1Gbps带宽，推荐10Gbps</li>
+                    </ul>
+                </div>
+                <div class="requirement-card">
+                    <h3>操作系统</h3>
+                    <ul>
+                        <li>Ubuntu 20.04 LTS或更新版本</li>
+                        <li>macOS 12.0或更新版本</li>
+                        <li>Linux内核5.4或更新版本</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <h2>🍎 macOS环境配置</h2>
+            
+            <div class="setup-section">
+                <h3>1. 安装Homebrew</h3>
+                <pre><code># 安装Homebrew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 配置PATH (Apple Silicon)
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zshrc
+source ~/.zshrc</code></pre>
+            </div>
+
+            <div class="setup-section">
+                <h3>2. 安装依赖</h3>
+                <pre><code># 安装基础依赖
+brew install \
+    git \
+    pkg-config \
+    make \
+    cmake \
+    llvm \
+    protobuf \
+    openssl@3 \
+    rocksdb
+
+# 安装Rust工具链
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env</code></pre>
+            </div>
+
+            <div class="setup-section">
+                <h3>3. 配置环境变量</h3>
+                <pre><code># 添加到 ~/.zshrc
+export DYLD_LIBRARY_PATH="/opt/homebrew/lib"
+export PATH="/opt/homebrew/bin:$PATH"
+export OPENSSL_ROOT_DIR="/opt/homebrew/opt/openssl@3"
+export OPENSSL_LIB_DIR="/opt/homebrew/opt/openssl@3/lib"
+export OPENSSL_INCLUDE_DIR="/opt/homebrew/opt/openssl@3/include"</code></pre>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>注意:</strong> 如果遇到 libclang.dylib 相关错误，请确保已正确安装 LLVM：
+                <pre><code>brew install llvm
+echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.zshrc</code></pre>
+            </div>
+        </div>
+
+        <div class="content">
+            <h2>🐧 Linux环境配置</h2>
+            
+            <div class="setup-section">
+                <h3>1. 安装系统依赖</h3>
+                <pre><code># 更新系统包
+sudo apt update && sudo apt upgrade -y
+
+# 安装基础依赖
+sudo apt install -y \
+    git \
+    pkg-config \
+    build-essential \
+    libssl-dev \
+    libclang-dev \
+    cmake \
+    protobuf-compiler \
+    libprotobuf-dev</code></pre>
+            </div>
+
+            <div class="setup-section">
+                <h3>2. 安装RocksDB</h3>
+                <pre><code># 安装RocksDB依赖
+sudo apt install -y \
+    libgflags-dev \
+    libsnappy-dev \
+    zlib1g-dev \
+    libbz2-dev \
+    liblz4-dev \
+    libzstd-dev
+
+# 编译安装RocksDB
+git clone https://github.com/facebook/rocksdb.git
+cd rocksdb
+git checkout v7.10.2
+sudo make shared_lib
+sudo make install-shared</code></pre>
+            </div>
+
+            <div class="setup-section">
+                <h3>3. 安装Rust工具链</h3>
+                <pre><code># 安装Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+
+# 安装特定版本
+rustup install 1.70.0
+rustup default 1.70.0</code></pre>
+            </div>
+
+            <div class="alert alert-warning">
+                <strong>性能优化:</strong> 对于生产环境，建议进行以下系统优化：
+                <pre><code># 调整系统限制
+echo "* soft nofile 1000000" | sudo tee -a /etc/security/limits.conf
+echo "* hard nofile 1000000" | sudo tee -a /etc/security/limits.conf
+
+# 优化网络参数
+echo "net.core.rmem_max=134217728" | sudo tee -a /etc/sysctl.conf
+echo "net.core.wmem_max=134217728" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p</code></pre>
+            </div>
+        </div>
+
+        <div class="content">
+            <h2>🚀 验证安装</h2>
+            
+            <div class="setup-section">
+                <h3>克隆代码库</h3>
+                <pre><code>git clone https://github.com/anza-xyz/agave.git
+cd agave</code></pre>
+            </div>
+
+            <div class="setup-section">
+                <h3>构建测试</h3>
+                <pre><code># 构建基础组件
+cargo build --release --bin solana
+
+# 运行单元测试
+cargo test --package solana-core -- --nocapture</code></pre>
+            </div>
+
+            <div class="alert alert-success">
+                <strong>成功标准:</strong>
+                <ul>
+                    <li>所有命令执行无错误</li>
+                    <li>cargo build 成功完成</li>
+                    <li>测试用例全部通过</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="content">
+            <h2>❓ 常见问题</h2>
+            
+            <div class="faq-section">
+                <div class="faq-item">
+                    <h3>Q: 编译时遇到 LLVM/Clang 相关错误？</h3>
+                    <p>A: 确保已正确安装 LLVM 并设置环境变量：</p>
+                    <pre><code># macOS
+brew install llvm
+echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.zshrc
+
+# Linux
+sudo apt install -y clang llvm</code></pre>
+                </div>
+
+                <div class="faq-item">
+                    <h3>Q: RocksDB 编译失败？</h3>
+                    <p>A: 检查是否安装了所有必要的依赖：</p>
+                    <pre><code># macOS
+brew install rocksdb
+
+# Linux
+sudo apt install -y \
+    libgflags-dev \
+    libsnappy-dev \
+    zlib1g-dev \
+    libbz2-dev \
+    liblz4-dev \
+    libzstd-dev</code></pre>
+                </div>
+
+                <div class="faq-item">
+                    <h3>Q: Cargo build 时内存不足？</h3>
+                    <p>A: 可以尝试减少并行编译任务数：</p>
+                    <pre><code>CARGO_BUILD_JOBS=4 cargo build --release</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Agave验证器文档中心 • 为Solana生态开发和验证器运营而创建</p>
+            <p>🌪️ 助力构建高性能区块链网络，支撑Web3未来</p>
+        </footer>
+
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle" id="themeToggle" aria-label="切换深色模式">
+            🌓
+        </button>
+    </div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        }
+
+        // 初始化主题
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && prefersDarkScheme.matches)) {
+            document.body.classList.add('dark-theme');
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+        prefersDarkScheme.addListener((e) => {
+            if (!localStorage.getItem('theme')) {
+                if (e.matches) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+            }
+        });
+
+        // Add copy functionality to code blocks
+        document.querySelectorAll('pre code').forEach(block => {
+            block.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.textContent).then(() => {
+                    const pre = this.parentElement;
+                    const originalBorder = pre.style.borderColor;
+                    pre.style.borderColor = 'var(--success-green)';
+                    setTimeout(() => {
+                        pre.style.borderColor = originalBorder;
+                    }, 1000);
+                });
+            });
+        });
+
+        // Add loading indicator for navigation
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!this.href.startsWith('#')) {
+                    const loading = document.createElement('div');
+                    loading.className = 'loading';
+                    this.appendChild(loading);
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

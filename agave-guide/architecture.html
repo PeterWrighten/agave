@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>架构深度解析 - Agave Validator Documentation</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌪️</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="text" class="search-bar" placeholder="搜索文档..." id="searchInput">
+            <a href="index.html" class="back-link">← 返回首页</a>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <h1>🏗️ 架构深度解析</h1>
+            <p class="subtitle">深入理解Agave验证器的核心架构设计</p>
+        </header>
+
+        <!-- Overview -->
+        <div class="content">
+            <h2>📊 系统架构概览</h2>
+            <p>Agave验证器采用高度模块化的设计，主要由以下核心组件构成：</p>
+            
+            <div class="architecture-grid">
+                <div class="component-card">
+                    <h3>🔄 TPU (Transaction Processing Unit)</h3>
+                    <ul>
+                        <li>交易接收与预处理</li>
+                        <li>签名验证与过滤</li>
+                        <li>交易打包与排序</li>
+                        <li>转发到其他验证节点</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h3>📦 TVU (Transaction Validation Unit)</h3>
+                    <ul>
+                        <li>区块验证与重放</li>
+                        <li>状态更新处理</li>
+                        <li>投票生成与广播</li>
+                        <li>账户数据同步</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h3>💾 AccountsDB</h3>
+                    <ul>
+                        <li>账户状态存储</li>
+                        <li>快照管理</li>
+                        <li>增量更新</li>
+                        <li>垃圾回收</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h3>⚡ SVM Runtime</h3>
+                    <ul>
+                        <li>智能合约执行</li>
+                        <li>并行处理调度</li>
+                        <li>安全沙箱</li>
+                        <li>指令验证</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- TPU Pipeline -->
+        <div class="content">
+            <h2>🔄 TPU流水线详解</h2>
+            
+            <div class="pipeline-section">
+                <h3>1. 交易接收层</h3>
+                <pre><code>// File: core/src/tpu/forward_stage.rs
+// TPU Forward Stage
+struct ForwardStage {
+    packet_receiver: PacketReceiver,
+    forward_socket: UdpSocket,
+    cluster_info: Arc<ClusterInfo>,
+}</code></pre>
+                <ul>
+                    <li>UDP数据包接收与解析</li>
+                    <li>基本格式验证</li>
+                    <li>重复交易过滤</li>
+                    <li>网络转发逻辑</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>2. 签名验证层</h3>
+                <pre><code>// File: core/src/tpu/verify_stage.rs
+// Signature Verification
+struct VerifyStage {
+    verifier: TransactionVerifier,
+    verified_sender: VerifiedSender,
+    stats: VerifyStats,
+}</code></pre>
+                <ul>
+                    <li>Ed25519签名验证</li>
+                    <li>多线程并行处理</li>
+                    <li>验证结果缓存</li>
+                    <li>性能统计</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>3. 交易打包层</h3>
+                <pre><code>// File: core/src/banking_stage.rs
+// Banking Stage
+struct BankingStage {
+    bank_forks: Arc<RwLock<BankForks>>,
+    scheduler: Arc<CentralScheduler>,
+    poh_recorder: Arc<RwLock<PohRecorder>>,
+}</code></pre>
+                <ul>
+                    <li>交易排序与分组</li>
+                    <li>费用计算</li>
+                    <li>区块生成</li>
+                    <li>中央调度器集成</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TVU Pipeline -->
+        <div class="content">
+            <h2>📦 TVU流水线详解</h2>
+            
+            <div class="pipeline-section">
+                <h3>1. 区块验证</h3>
+                <pre><code>// File: core/src/tvu/block_verification_stage.rs
+// Block Verification
+struct BlockVerificationStage {
+    verified_receiver: VerifiedReceiver,
+    retransmit_sender: RetransmitSender,
+    vote_sender: VoteSender,
+}</code></pre>
+                <ul>
+                    <li>区块哈希验证</li>
+                    <li>父区块关联</li>
+                    <li>时间戳检查</li>
+                    <li>重放保护</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>2. 状态处理</h3>
+                <pre><code>// File: core/src/replay_stage.rs
+// State Processing
+struct ReplayStage {
+    bank_forks: Arc<RwLock<BankForks>>,
+    progress: Arc<RwLock<ProgressMap>>,
+    accounts_background_request_sender: AbsRequestSender,
+}</code></pre>
+                <ul>
+                    <li>交易重放</li>
+                    <li>状态更新</li>
+                    <li>分叉处理</li>
+                    <li>投票生成</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>3. 账户同步</h3>
+                <pre><code>// File: runtime/src/accounts_background_service.rs
+// Accounts Background Service
+struct AccountsBackgroundService {
+    accounts_db: Arc<AccountsDb>,
+    snapshot_request_handler: SnapshotRequestHandler,
+    accounts_cache: Arc<AccountsCache>,
+}</code></pre>
+                <ul>
+                    <li>增量同步</li>
+                    <li>快照管理</li>
+                    <li>存储优化</li>
+                    <li>缓存更新</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SVM Runtime -->
+        <div class="content">
+            <h2>⚡ SVM运行时架构</h2>
+            
+            <div class="runtime-section">
+                <h3>执行引擎</h3>
+                <pre><code>// File: runtime/src/svm/program_executor.rs
+// Program Executor
+struct ProgramExecutor {
+    program_cache: Arc<RwLock<ProgramCache>>,
+    syscall_registry: SyscallRegistry,
+    compute_budget: ComputeBudget,
+}</code></pre>
+                <ul>
+                    <li>指令解析与执行</li>
+                    <li>系统调用处理</li>
+                    <li>资源限制控制</li>
+                    <li>错误处理机制</li>
+                </ul>
+            </div>
+
+            <div class="runtime-section">
+                <h3>并行调度器</h3>
+                <pre><code>// File: unified-scheduler-pool/src/lib.rs
+// Central Scheduler
+struct CentralScheduler {
+    thread_pool: ThreadPool,
+    dependency_analyzer: DependencyAnalyzer,
+    execution_timing: ExecutionTiming,
+}</code></pre>
+                <ul>
+                    <li>交易依赖分析</li>
+                    <li>并行执行调度</li>
+                    <li>资源分配</li>
+                    <li>性能监控</li>
+                </ul>
+            </div>
+
+            <div class="runtime-section">
+                <h3>安全沙箱</h3>
+                <pre><code>// File: runtime/src/svm/security.rs
+// Security Sandbox
+struct SecuritySandbox {
+    memory_mapper: MemoryMapper,
+    instruction_meter: InstructionMeter,
+    syscall_context: SyscallContext,
+}</code></pre>
+                <ul>
+                    <li>内存隔离</li>
+                    <li>指令计量</li>
+                    <li>系统调用限制</li>
+                    <li>资源控制</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Performance Optimizations -->
+        <div class="content">
+            <h2>🚀 性能优化设计</h2>
+            
+            <div class="optimization-section">
+                <h3>1. 中央调度器</h3>
+                <div class="alert alert-info">
+                    <strong>核心创新:</strong> v1.18引入的中央调度器显著提升了交易处理性能
+                </div>
+                <ul>
+                    <li>智能依赖分析</li>
+                    <li>动态线程池管理</li>
+                    <li>自适应批处理</li>
+                    <li>负载均衡策略</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. 内存管理</h3>
+                <div class="alert alert-success">
+                    <strong>优化重点:</strong> 精细的内存管理机制确保高效的资源利用
+                </div>
+                <ul>
+                    <li>账户缓存优化</li>
+                    <li>零拷贝技术</li>
+                    <li>内存池复用</li>
+                    <li>垃圾回收策略</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. 网络优化</h3>
+                <div class="alert alert-warning">
+                    <strong>关键设计:</strong> 高效的网络传输协议确保快速的节点间通信
+                </div>
+                <ul>
+                    <li>QUIC协议优化</li>
+                    <li>数据包聚合</li>
+                    <li>流量控制</li>
+                    <li>拥塞处理</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Agave验证器文档中心 • 为Solana生态开发和验证器运营而创建</p>
+            <p>🌪️ 助力构建高性能区块链网络，支撑Web3未来</p>
+        </footer>
+
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle" id="themeToggle" aria-label="切换深色模式">
+            🌓
+        </button>
+    </div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        }
+
+        // 初始化主题
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && prefersDarkScheme.matches)) {
+            document.body.classList.add('dark-theme');
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+        prefersDarkScheme.addListener((e) => {
+            if (!localStorage.getItem('theme')) {
+                if (e.matches) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+            }
+        });
+
+        // Add copy functionality to code blocks
+        document.querySelectorAll('pre code').forEach(block => {
+            block.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.textContent).then(() => {
+                    const pre = this.parentElement;
+                    const originalBorder = pre.style.borderColor;
+                    pre.style.borderColor = 'var(--success-green)';
+                    setTimeout(() => {
+                        pre.style.borderColor = originalBorder;
+                    }, 1000);
+                });
+            });
+        });
+
+        // Add loading indicator for navigation
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!this.href.startsWith('#')) {
+                    const loading = document.createElement('div');
+                    loading.className = 'loading';
+                    this.appendChild(loading);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>命令参考 - Agave Validator Documentation</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌪️</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="text" class="search-bar" placeholder="搜索文档..." id="searchInput">
+            <a href="index.html" class="back-link">← 返回首页</a>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <h1>🔧 命令参考</h1>
+            <p class="subtitle">Agave验证器的完整命令行工具指南</p>
+        </header>
+
+        <!-- Overview -->
+        <div class="content">
+            <h2>📊 命令概览</h2>
+            <div class="alert alert-info">
+                <strong>提示：</strong> 所有命令都支持 <code>--help</code> 参数来查看详细帮助信息。
+            </div>
+            
+            <div class="architecture-grid">
+                <div class="component-card">
+                    <h3>基础命令</h3>
+                    <ul>
+                        <li>配置管理</li>
+                        <li>密钥管理</li>
+                        <li>账户操作</li>
+                        <li>交易处理</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h3>验证器命令</h3>
+                    <ul>
+                        <li>节点管理</li>
+                        <li>投票操作</li>
+                        <li>质押控制</li>
+                        <li>监控工具</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h3>开发工具</h3>
+                    <ul>
+                        <li>程序部署</li>
+                        <li>测试工具</li>
+                        <li>调试功能</li>
+                        <li>性能分析</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h3>网络工具</h3>
+                    <ul>
+                        <li>集群连接</li>
+                        <li>网络诊断</li>
+                        <li>状态查询</li>
+                        <li>性能监控</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Basic Commands -->
+        <div class="content">
+            <h2>🛠️ 基础命令</h2>
+            
+            <div class="pipeline-section">
+                <h3>1. 配置管理</h3>
+                <pre><code># 查看当前配置
+solana config get
+
+# 设置配置
+solana config set --url http://api.mainnet-beta.solana.com
+
+# 设置默认密钥对
+solana config set --keypair ~/validator-keypair.json</code></pre>
+                <ul>
+                    <li>管理CLI工具配置</li>
+                    <li>设置默认网络</li>
+                    <li>配置密钥对</li>
+                    <li>自定义RPC端点</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>2. 密钥管理</h3>
+                <pre><code># 生成新密钥对
+solana-keygen new -o ~/validator-keypair.json
+
+# 显示公钥
+solana-keygen pubkey ~/validator-keypair.json
+
+# 验证密钥对
+solana-keygen verify <PUBKEY> ~/validator-keypair.json</code></pre>
+                <ul>
+                    <li>创建密钥对</li>
+                    <li>恢复密钥对</li>
+                    <li>验证密钥对</li>
+                    <li>管理纸钱包</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>3. 账户操作</h3>
+                <pre><code># 查看账户信息
+solana account <ACCOUNT_ADDRESS>
+
+# 查看账户余额
+solana balance
+
+# 转账SOL
+solana transfer <TO_ADDRESS> <AMOUNT></code></pre>
+                <ul>
+                    <li>查询账户信息</li>
+                    <li>管理账户余额</li>
+                    <li>转账操作</li>
+                    <li>账户创建</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Validator Commands -->
+        <div class="content">
+            <h2>🎯 验证器命令</h2>
+            
+            <div class="pipeline-section">
+                <h3>1. 节点管理</h3>
+                <pre><code># 启动验证器
+agave-validator \
+  --identity ~/validator-keypair.json \
+  --vote-account ~/vote-account-keypair.json \
+  --ledger ~/validator-ledger \
+  --rpc-port 8899 \
+  --dynamic-port-range 8000-8020 \
+  --entrypoint entrypoint.mainnet-beta.solana.com:8001 \
+  --limit-ledger-size \
+  --log ~/validator.log
+
+# 检查验证器状态
+solana validators</code></pre>
+                <ul>
+                    <li>启动验证器</li>
+                    <li>配置参数</li>
+                    <li>监控状态</li>
+                    <li>性能优化</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>2. 投票操作</h3>
+                <pre><code># 创建投票账户
+solana create-vote-account ~/vote-account-keypair.json ~/validator-keypair.json ~/withdrawer-keypair.json
+
+# 查看投票账户
+solana vote-account ~/vote-account-keypair.json
+
+# 更新投票账户
+solana vote-update-commission ~/vote-account-keypair.json 10</code></pre>
+                <ul>
+                    <li>创建投票账户</li>
+                    <li>管理投票权限</li>
+                    <li>设置佣金</li>
+                    <li>查看投票历史</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>3. 质押操作</h3>
+                <pre><code># 创建质押账户
+solana create-stake-account ~/stake-account-keypair.json 100
+
+# 委托质押
+solana delegate-stake ~/stake-account-keypair.json ~/vote-account-keypair.json
+
+# 取消质押
+solana deactivate-stake ~/stake-account-keypair.json</code></pre>
+                <ul>
+                    <li>创建质押账户</li>
+                    <li>委托质押</li>
+                    <li>取消质押</li>
+                    <li>查看收益</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Development Tools -->
+        <div class="content">
+            <h2>💻 开发工具</h2>
+            
+            <div class="pipeline-section">
+                <h3>1. 程序部署</h3>
+                <pre><code># 部署程序
+solana program deploy ~/program.so
+
+# 显示程序信息
+solana program show <PROGRAM_ID>
+
+# 关闭程序
+solana program close <PROGRAM_ID></code></pre>
+                <ul>
+                    <li>部署程序</li>
+                    <li>更新程序</li>
+                    <li>管理程序账户</li>
+                    <li>查看程序日志</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>2. 测试工具</h3>
+                <pre><code># 启动测试验证器
+solana-test-validator
+
+# 运行测试套件
+solana test
+
+# 模拟交易
+solana simulate <TRANSACTION_SIGNATURE></code></pre>
+                <ul>
+                    <li>本地测试网络</li>
+                    <li>交易模拟</li>
+                    <li>性能测试</li>
+                    <li>错误诊断</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>3. 调试工具</h3>
+                <pre><code># 查看交易日志
+solana logs
+
+# 解码交易
+solana decode-transaction <TRANSACTION_DATA>
+
+# 查看区块信息
+solana block <SLOT></code></pre>
+                <ul>
+                    <li>日志查看</li>
+                    <li>交易分析</li>
+                    <li>状态检查</li>
+                    <li>错误追踪</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Network Tools -->
+        <div class="content">
+            <h2>🌐 网络工具</h2>
+            
+            <div class="pipeline-section">
+                <h3>1. 集群连接</h3>
+                <pre><code># 切换网络
+solana config set --url http://api.devnet.solana.com
+
+# 检查连接
+solana cluster-version
+
+# 查看网络状态
+solana epoch-info</code></pre>
+                <ul>
+                    <li>网络选择</li>
+                    <li>连接管理</li>
+                    <li>状态查询</li>
+                    <li>版本检查</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>2. 网络诊断</h3>
+                <pre><code># 检查网络延迟
+solana ping
+
+# 查看验证器列表
+solana gossip
+
+# 检查集群健康状况
+solana cluster-date</code></pre>
+                <ul>
+                    <li>延迟测试</li>
+                    <li>节点发现</li>
+                    <li>健康检查</li>
+                    <li>性能分析</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>3. 性能监控</h3>
+                <pre><code># 查看区块生产情况
+solana block-production
+
+# 检查交易计数
+solana transaction-count
+
+# 监控实时槽位
+solana slots</code></pre>
+                <ul>
+                    <li>性能指标</li>
+                    <li>资源使用</li>
+                    <li>吞吐量监控</li>
+                    <li>延迟分析</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Common Options -->
+        <div class="content">
+            <h2>🔨 通用选项</h2>
+            
+            <div class="optimization-section">
+                <h3>1. 输出格式</h3>
+                <div class="alert alert-info">
+                    <strong>格式选项：</strong> 大多数命令支持 <code>--output</code> 参数来自定义输出格式。
+                </div>
+                <ul>
+                    <li>--output json</li>
+                    <li>--output json-compact</li>
+                    <li>--verbose</li>
+                    <li>--quiet</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. 网络选项</h3>
+                <div class="alert alert-success">
+                    <strong>网络参数：</strong> 可以通过以下参数配置网络连接。
+                </div>
+                <ul>
+                    <li>--url [网络地址]</li>
+                    <li>--ws [WebSocket地址]</li>
+                    <li>--commitment [确认级别]</li>
+                    <li>--timeout [超时时间]</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. 安全选项</h3>
+                <div class="alert alert-warning">
+                    <strong>安全参数：</strong> 用于配置安全相关选项。
+                </div>
+                <ul>
+                    <li>--keypair [密钥文件]</li>
+                    <li>--skip-seed-phrase-validation</li>
+                    <li>--confirm-key</li>
+                    <li>--sign-only</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Best Practices -->
+        <div class="content">
+            <h2>📝 最佳实践</h2>
+            
+            <div class="optimization-section">
+                <h3>1. 安全建议</h3>
+                <ul>
+                    <li>定期备份密钥</li>
+                    <li>使用硬件钱包</li>
+                    <li>妥善保管助记词</li>
+                    <li>避免暴露私钥</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. 性能优化</h3>
+                <ul>
+                    <li>合理设置缓存大小</li>
+                    <li>优化网络参数</li>
+                    <li>监控资源使用</li>
+                    <li>定期维护清理</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. 运维建议</h3>
+                <ul>
+                    <li>设置监控告警</li>
+                    <li>自动化运维</li>
+                    <li>定期更新软件</li>
+                    <li>保持日志记录</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Agave验证器文档中心 • 为Solana生态开发和验证器运营而创建</p>
+            <p>🌪️ 助力构建高性能区块链网络，支撑Web3未来</p>
+        </footer>
+
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle" id="themeToggle" aria-label="切换深色模式">
+            🌓
+        </button>
+    </div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        }
+
+        // 初始化主题
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && prefersDarkScheme.matches)) {
+            document.body.classList.add('dark-theme');
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+        prefersDarkScheme.addListener((e) => {
+            if (!localStorage.getItem('theme')) {
+                if (e.matches) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+            }
+        });
+
+        // Add copy functionality to code blocks
+        document.querySelectorAll('pre code').forEach(block => {
+            block.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.textContent).then(() => {
+                    const pre = this.parentElement;
+                    const originalBorder = pre.style.borderColor;
+                    pre.style.borderColor = 'var(--success-green)';
+                    setTimeout(() => {
+                        pre.style.borderColor = originalBorder;
+                    }, 1000);
+                });
+            });
+        });
+
+        // Add loading indicator for navigation
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!this.href.startsWith('#')) {
+                    const loading = document.createElement('div');
+                    loading.className = 'loading';
+                    this.appendChild(loading);
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

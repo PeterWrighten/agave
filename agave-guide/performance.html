@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>性能优化 - Agave Validator Documentation</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌪️</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="text" class="search-bar" placeholder="搜索文档..." id="searchInput">
+            <a href="index.html" class="back-link">← 返回首页</a>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <h1>⚙️ 性能优化</h1>
+            <p class="subtitle">Agave验证器的高级配置与性能调优指南</p>
+        </header>
+
+        <!-- Overview -->
+        <div class="content">
+            <h2>🎯 性能优化概览</h2>
+            <p>Agave验证器的性能调优涉及多个层面，从硬件配置到软件参数，每一个环节都对整体性能产生重要影响。本指南将提供系统化的优化策略。</p>
+            
+            <div class="alert alert-info">
+                <strong>性能目标:</strong> 通过合理配置可以实现50,000+TPS的交易处理能力和亚秒级的确认延迟
+            </div>
+        </div>
+
+        <!-- Central Scheduler -->
+        <div class="content">
+            <h2>🚀 中央调度器优化</h2>
+            
+            <div class="pipeline-section">
+                <h3>1. 调度器配置</h3>
+                <p>v1.18引入的中央调度器是Agave性能提升的核心特性，通过智能调度显著提升交易处理效率。</p>
+                <pre><code># 启用中央调度器
+export SOLANA_ENABLE_CENTRAL_SCHEDULER=1
+
+# 配置调度器线程数
+export SOLANA_SCHEDULER_THREADS=8
+
+# 设置批处理大小
+export SOLANA_BATCH_SIZE=128</code></pre>
+                <ul>
+                    <li><strong>依赖分析:</strong> 自动识别交易依赖关系</li>
+                    <li><strong>并行执行:</strong> 独立交易的并发处理</li>
+                    <li><strong>负载均衡:</strong> 动态分配执行资源</li>
+                    <li><strong>优先级调度:</strong> 基于费用的智能排序</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>2. 调度策略</h3>
+                <div class="alert alert-success">
+                    <strong>优化效果:</strong> 合理配置可提升80%的费用收集效率
+                </div>
+                <pre><code># 设置调度策略
+--central-scheduler-policy adaptive
+
+# 配置执行批次
+--execution-batch-size 256
+
+# 调整并发级别
+--max-concurrent-transactions 1024</code></pre>
+                <ul>
+                    <li>自适应批处理</li>
+                    <li>动态线程池</li>
+                    <li>智能预取机制</li>
+                    <li>缓存友好调度</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>3. 性能监控</h3>
+                <pre><code># 查看调度器状态
+solana-validator monitor --scheduler-stats
+
+# 检查批处理效率
+solana metrics --batch-efficiency
+
+# 监控执行延迟
+watch -n 1 'solana transaction-count'</code></pre>
+                <ul>
+                    <li>实时性能指标</li>
+                    <li>批处理统计</li>
+                    <li>延迟分析</li>
+                    <li>吞吐量监控</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Memory Optimization -->
+        <div class="content">
+            <h2>🧠 内存与缓存优化</h2>
+            
+            <div class="optimization-section">
+                <h3>1. 账户缓存配置</h3>
+                <pre><code># AccountsDB缓存设置
+--accounts-db-cache-limit-mb 8192
+
+# 账户索引缓存
+--accounts-index-memory-limit-mb 2048
+
+# 快照缓存
+--accounts-db-cache-clean-frequency 100</code></pre>
+                <ul>
+                    <li><strong>热点账户缓存:</strong> 频繁访问账户的内存缓存</li>
+                    <li><strong>索引优化:</strong> 账户索引的高效存储</li>
+                    <li><strong>缓存淘汰:</strong> LRU策略的智能清理</li>
+                    <li><strong>预加载机制:</strong> 预测性的数据加载</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. 内存池管理</h3>
+                <div class="alert alert-warning">
+                    <strong>重要配置:</strong> 合理的内存池设置可以减少垃圾回收压力
+                </div>
+                <pre><code># 设置交易内存池
+--banking-trace-dir-byte-limit 104857600
+
+# 配置RPC内存限制
+--rpc-max-request-body-size 52428800
+
+# 日志缓冲区大小
+--log-buffer-size 1048576</code></pre>
+                <ul>
+                    <li>零拷贝缓冲区</li>
+                    <li>内存池复用</li>
+                    <li>预分配策略</li>
+                    <li>内存碎片整理</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. 系统内存调优</h3>
+                <pre><code># 系统内存配置
+echo 'vm.swappiness=1' >> /etc/sysctl.conf
+echo 'vm.dirty_ratio=5' >> /etc/sysctl.conf
+echo 'vm.dirty_background_ratio=2' >> /etc/sysctl.conf
+
+# 应用配置
+sysctl -p</code></pre>
+                <ul>
+                    <li>禁用交换文件</li>
+                    <li>优化脏页写回</li>
+                    <li>调整内核缓存</li>
+                    <li>NUMA优化</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Network Optimization -->
+        <div class="content">
+            <h2>🌐 网络传输优化</h2>
+            
+            <div class="optimization-section">
+                <h3>1. QUIC协议调优</h3>
+                <p>QUIC是Agave验证器的核心网络协议，合理配置可以显著提升网络性能。</p>
+                <pre><code># QUIC连接配置
+--quic-max-connections-per-ip 40
+--quic-max-staked-connections 2000
+--quic-max-unstaked-connections 500
+
+# 带宽限制
+--quic-max-incoming-bandwidth 100000000
+--quic-max-outgoing-bandwidth 100000000</code></pre>
+                <ul>
+                    <li><strong>连接复用:</strong> 高效的连接池管理</li>
+                    <li><strong>拥塞控制:</strong> BBR算法的网络优化</li>
+                    <li><strong>流量整形:</strong> 智能的带宽分配</li>
+                    <li><strong>抗丢包设计:</strong> 快速重传机制</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. UDP套接字优化</h3>
+                <div class="alert alert-info">
+                    <strong>网络调优:</strong> UDP层面的优化对降低延迟至关重要
+                </div>
+                <pre><code># 网络缓冲区配置
+--socket-receive-buffer-size 67108864
+--socket-send-buffer-size 67108864
+
+# 多线程网络处理
+--enable-quic-forward-proxy
+--quic-forward-proxy-port 8009</code></pre>
+                <ul>
+                    <li>大缓冲区设置</li>
+                    <li>零拷贝发送</li>
+                    <li>中断负载均衡</li>
+                    <li>网卡队列优化</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. 防火墙与网络栈</h3>
+                <pre><code># 系统网络优化
+echo 'net.core.rmem_default = 67108864' >> /etc/sysctl.conf
+echo 'net.core.rmem_max = 134217728' >> /etc/sysctl.conf
+echo 'net.core.wmem_default = 67108864' >> /etc/sysctl.conf
+echo 'net.core.wmem_max = 134217728' >> /etc/sysctl.conf
+
+# 应用网络配置
+sysctl -p</code></pre>
+                <ul>
+                    <li>内核网络缓冲区</li>
+                    <li>TCP/UDP栈调优</li>
+                    <li>网络队列长度</li>
+                    <li>中断处理优化</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Storage Optimization -->
+        <div class="content">
+            <h2>💾 存储层优化</h2>
+            
+            <div class="optimization-section">
+                <h3>1. RocksDB配置</h3>
+                <p>AccountsDB基于RocksDB存储，合理配置对读写性能影响巨大。</p>
+                <pre><code># RocksDB参数配置
+--accounts-db-config-file /path/to/rocksdb.conf
+
+# 写缓冲区设置
+--accounts-db-write-buffer-size 268435456
+
+# 压缩策略
+--accounts-db-compression zstd</code></pre>
+                <ul>
+                    <li><strong>写入优化:</strong> 大写缓冲区和批量写入</li>
+                    <li><strong>压缩策略:</strong> Zstandard高效压缩</li>
+                    <li><strong>Level配置:</strong> 多层存储结构优化</li>
+                    <li><strong>缓存调优:</strong> Block Cache的合理设置</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. 存储设备优化</h3>
+                <div class="alert alert-success">
+                    <strong>硬件建议:</strong> NVMe SSD可以提供最佳的I/O性能
+                </div>
+                <pre><code># SSD优化配置
+--accounts-path /nvme1/solana-accounts
+--ledger-path /nvme2/solana-ledger
+
+# 快照位置
+--snapshot-path /nvme3/solana-snapshots</code></pre>
+                <ul>
+                    <li>NVMe SSD部署</li>
+                    <li>RAID配置策略</li>
+                    <li>文件系统选择</li>
+                    <li>挂载点优化</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. 清理与维护</h3>
+                <pre><code># 定期清理配置
+--limit-ledger-size 200000000
+
+# 快照清理
+--maximum-snapshots-to-retain 10
+
+# 自动压缩
+--accounts-db-auto-compaction-interval 3600</code></pre>
+                <ul>
+                    <li>账本大小限制</li>
+                    <li>快照轮换策略</li>
+                    <li>定期压缩维护</li>
+                    <li>垃圾回收机制</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Performance Monitoring -->
+        <div class="content">
+            <h2>📊 性能监控与诊断</h2>
+            
+            <div class="optimization-section">
+                <h3>1. 实时监控</h3>
+                <pre><code># 启用性能指标
+--enable-rpc-transaction-history
+--rpc-pubsub-enable-block-subscription
+
+# Prometheus指标
+--metrics-addr 0.0.0.0:8899</code></pre>
+                <ul>
+                    <li><strong>TPS监控:</strong> 实时交易处理速度</li>
+                    <li><strong>延迟统计:</strong> 交易确认时间分析</li>
+                    <li><strong>资源使用:</strong> CPU、内存、网络监控</li>
+                    <li><strong>错误追踪:</strong> 异常和失败统计</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. 诊断工具</h3>
+                <div class="alert alert-warning">
+                    <strong>诊断策略:</strong> 定期分析性能瓶颈，及时调整配置参数
+                </div>
+                <pre><code># 性能分析工具
+solana-validator monitor
+solana logs --follow
+
+# 网络诊断
+solana gossip
+solana validator-info get</code></pre>
+                <ul>
+                    <li>系统资源分析</li>
+                    <li>网络连接诊断</li>
+                    <li>交易池状态</li>
+                    <li>共识参与度</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. 告警与自动化</h3>
+                <pre><code># 告警脚本示例
+#!/bin/bash
+TPS=$(solana transaction-count | jq '.result')
+if [ $TPS -lt 1000 ]; then
+    echo "Low TPS alert: $TPS" | mail admin@example.com
+fi</code></pre>
+                <ul>
+                    <li>性能阈值告警</li>
+                    <li>自动重启机制</li>
+                    <li>日志轮换策略</li>
+                    <li>配置备份恢复</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Hardware Recommendations -->
+        <div class="content">
+            <h2>🖥️ 硬件配置建议</h2>
+            
+            <div class="optimization-section">
+                <h3>1. 最低配置</h3>
+                <ul>
+                    <li><strong>CPU:</strong> 12核心/24线程 (2.8GHz+)</li>
+                    <li><strong>内存:</strong> 128GB DDR4-3200</li>
+                    <li><strong>存储:</strong> 2TB NVMe SSD</li>
+                    <li><strong>网络:</strong> 1Gbps专用带宽</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. 推荐配置</h3>
+                <div class="alert alert-success">
+                    <strong>高性能设置:</strong> 针对主网验证器的最佳硬件配置
+                </div>
+                <ul>
+                    <li><strong>CPU:</strong> 16核心/32线程 (3.4GHz+)</li>
+                    <li><strong>内存:</strong> 256GB DDR4-3600</li>
+                    <li><strong>存储:</strong> 4TB NVMe SSD (RAID 1)</li>
+                    <li><strong>网络:</strong> 10Gbps专用带宽</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. 企业级配置</h3>
+                <ul>
+                    <li><strong>CPU:</strong> 24核心/48线程 (3.6GHz+)</li>
+                    <li><strong>内存:</strong> 512GB DDR4-4000</li>
+                    <li><strong>存储:</strong> 8TB NVMe SSD (多RAID)</li>
+                    <li><strong>网络:</strong> 25Gbps冗余连接</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Best Practices -->
+        <div class="content">
+            <h2>🎯 最佳实践</h2>
+            
+            <div class="optimization-section">
+                <h3>1. 配置管理</h3>
+                <ul>
+                    <li>版本化配置文件</li>
+                    <li>渐进式参数调整</li>
+                    <li>A/B测试验证</li>
+                    <li>回滚机制准备</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. 监控策略</h3>
+                <ul>
+                    <li>多维度性能指标</li>
+                    <li>基准测试对比</li>
+                    <li>趋势分析预警</li>
+                    <li>容量规划指导</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. 运维规范</h3>
+                <ul>
+                    <li>定期性能评估</li>
+                    <li>配置优化迭代</li>
+                    <li>故障演练准备</li>
+                    <li>文档更新维护</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Agave验证器文档中心 • 为Solana生态开发和验证器运营而创建</p>
+            <p>🌪️ 助力构建高性能区块链网络，支撑Web3未来</p>
+        </footer>
+
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle" id="themeToggle" aria-label="切换深色模式">
+            🌓
+        </button>
+    </div>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const sections = document.querySelectorAll('.content, .pipeline-section, .optimization-section');
+            
+            sections.forEach(section => {
+                const text = section.textContent.toLowerCase();
+                if (text.includes(searchTerm) || searchTerm === '') {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        });
+
+        // Theme toggle
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('darkTheme', document.body.classList.contains('dark-theme'));
+        });
+
+        // Load saved theme
+        if (localStorage.getItem('darkTheme') === 'true') {
+            document.body.classList.add('dark-theme');
+        }
+
+        // Copy code functionality
+        document.querySelectorAll('pre code').forEach(block => {
+            const button = document.createElement('button');
+            button.className = 'copy-button';
+            button.textContent = '复制';
+            button.addEventListener('click', function() {
+                navigator.clipboard.writeText(block.textContent);
+                button.textContent = '已复制!';
+                setTimeout(() => button.textContent = '复制', 2000);
+            });
+            block.parentNode.appendChild(button);
+        });
+
+        // Add loading indicator for navigation
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!this.href.startsWith('#')) {
+                    const loading = document.createElement('div');
+                    loading.className = 'loading';
+                    this.appendChild(loading);
+                }
+            });
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

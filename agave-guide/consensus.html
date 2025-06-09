@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>共识机制 - Agave Validator Documentation</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌪️</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="text" class="search-bar" placeholder="搜索文档..." id="searchInput">
+            <a href="index.html" class="back-link">← 返回首页</a>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <h1>🔗 共识机制</h1>
+            <p class="subtitle">深入理解Solana的共识算法与实现</p>
+        </header>
+
+        <!-- Overview -->
+        <div class="content">
+            <h2>📊 共识机制概述</h2>
+            <div class="alert alert-info">
+                <strong>核心要点：</strong> Solana采用Proof of History (PoH) + Tower BFT的混合共识机制，结合了时间戳证明和拜占庭容错算法的优势。
+            </div>
+            
+            <div class="architecture-grid">
+                <div class="component-card">
+                    <h3>Proof of History</h3>
+                    <ul>
+                        <li>可验证延迟函数</li>
+                        <li>全局时间戳证明</li>
+                        <li>顺序性保证</li>
+                        <li>高效验证</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h3>Tower BFT</h3>
+                    <ul>
+                        <li>投票锁定机制</li>
+                        <li>分叉选择规则</li>
+                        <li>经济惩罚机制</li>
+                        <li>共识收敛保证</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h3>领导者调度</h3>
+                    <ul>
+                        <li>基于权益的选择</li>
+                        <li>随机性保证</li>
+                        <li>公平性机制</li>
+                        <li>防作恶设计</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h3>投票机制</h3>
+                    <ul>
+                        <li>权益加权投票</li>
+                        <li>投票确认规则</li>
+                        <li>分叉处理策略</li>
+                        <li>奖励分配机制</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proof of History -->
+        <div class="content">
+            <h2>⚡ Proof of History机制</h2>
+            
+            <div class="pipeline-section">
+                <h3>1. 工作原理</h3>
+                <pre><code>// 文件: poh/src/poh_recorder.rs
+use solana_sdk::hash::{Hash, Hasher};
+use solana_sdk::timing::timestamp;
+
+#[derive(Debug)]
+pub struct PohRecorder {
+    // PoH哈希链状态
+    pub hash: Hash,
+    // tick计数器
+    pub tick_count: u64,
+    // 最后一次tick的时间戳
+    pub timestamp: Option<UnixTimestamp>,
+    // PoH生成器
+    pub poh: Poh,
+}
+
+impl PohRecorder {
+    pub fn tick(&mut self) {
+        self.hash = hash(&self.hash.as_ref());
+        self.tick_count += 1;
+        self.timestamp = Some(timestamp());
+    }
+    
+    pub fn record(&mut self, data: &[u8]) -> Option<Hash> {
+        let mut hasher = Hasher::default();
+        hasher.hash(&self.hash.as_ref());
+        hasher.hash(data);
+        self.hash = hasher.result();
+        Some(self.hash)
+    }
+}</code></pre>
+                <p>Proof of History (PoH) 是一种可验证延迟函数 (VDF)，通过连续的哈希运算创建一个加密时钟，为区块链提供全局时间参考。主要特点：</p>
+                <ul>
+                    <li>连续哈希运算生成时间证明</li>
+                    <li>每个哈希都依赖前一个哈希</li>
+                    <li>可以并行验证时间证明</li>
+                    <li>为交易提供全局顺序</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>2. 时间槽设计</h3>
+                <pre><code>// 文件: sdk/src/timing.rs
+pub const SLOT_DURATION_MS: u64 = 400; // 毫秒
+pub const TICKS_PER_SLOT: u64 = 160; // 每个槽的tick数
+pub const DEFAULT_TICK_DURATION_US: u64 = (SLOT_DURATION_MS * 1000) / TICKS_PER_SLOT;
+
+// 文件: runtime/src/bank.rs
+impl Bank {
+    pub fn new_from_parent(&self, parent: &Arc<Bank>, slot: Slot) -> Self {
+        let mut bank = Bank {
+            slot,
+            tick_height: parent.tick_height + TICKS_PER_SLOT,
+            // PoH哈希继承自父区块
+            poh_hash: parent.poh_hash,
+            ..
+        };
+        
+        // 验证时间槽的有效性
+        assert!(bank.slot > parent.slot);
+        bank
+    }
+}</code></pre>
+                <ul>
+                    <li>每个槽持续400毫秒</li>
+                    <li>槽内包含固定数量的tick</li>
+                    <li>领导者在槽内生成区块</li>
+                    <li>保证交易处理的时序性</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>3. 安全性保证</h3>
+                <div class="alert alert-warning">
+                    <strong>注意：</strong> PoH的安全性依赖于哈希运算的单线程特性，任何并行优化都可能影响安全性。
+                </div>
+                <ul>
+                    <li>哈希链不可伪造</li>
+                    <li>时间证明可验证</li>
+                    <li>防止时间戳篡改</li>
+                    <li>抵御重放攻击</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Tower BFT -->
+        <div class="content">
+            <h2>🗼 Tower BFT共识</h2>
+            
+            <div class="pipeline-section">
+                <h3>1. 投票塔机制</h3>
+                <pre><code>// 文件: core/src/consensus/tower.rs
+use solana_sdk::clock::Slot;
+use solana_sdk::hash::Hash;
+use solana_vote_program::vote_state::Lockout;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Tower {
+    // 当前投票高度
+    pub node_pubkey: Pubkey,
+    // 阈值深度
+    pub threshold_depth: usize,
+    // 阈值大小
+    pub threshold_size: f64,
+    // 投票历史记录
+    pub vote_state: VoteState,
+    // 投票锁定期
+    pub lockouts: VecDeque<Lockout>,
+    // 最后投票槽
+    pub last_vote: Vote,
+}
+
+impl Tower {
+    // 检查是否可以投票给指定槽
+    pub fn check_vote_stake_threshold(
+        &self,
+        slot: Slot,
+        voted_stakes: &VotedStakes,
+        total_stake: u64,
+    ) -> ThresholdDecision {
+        let stake_lockouts = self.collect_vote_lockouts(
+            slot,
+            voted_stakes.slot_stakes(),
+        );
+        
+        // 计算支持的权益
+        let threshold = (2f64 / 3f64) * total_stake as f64;
+        if stake_lockouts > threshold {
+            ThresholdDecision::PassedThreshold
+        } else {
+            ThresholdDecision::FailedThreshold(stake_lockouts, threshold)
+        }
+    }
+}</code></pre>
+                <p>Tower BFT通过投票锁定机制确保共识的安全性和活性：</p>
+                <ul>
+                    <li>投票逐层累积</li>
+                    <li>锁定期指数增长</li>
+                    <li>32票达到最大锁定</li>
+                    <li>违反锁定将被惩罚</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>2. 分叉选择规则</h3>
+                <pre><code>// 文件: core/src/consensus/fork_choice.rs
+use std::collections::HashMap;
+use solana_ledger::blockstore::Blockstore;
+
+#[derive(Debug)]
+pub struct HeaviestSubtreeForkChoice {
+    fork_tree: ForkTree,
+    stake_voted_at: HashMap<u64, u64>,
+    stake_voted_subtree: HashMap<u64, u64>,
+}
+
+impl HeaviestSubtreeForkChoice {
+    // 计算最重子树权重
+    pub fn compute_bank_stats(
+        &mut self,
+        bank: &Bank,
+        tower: &Tower,
+        progress: &ProgressMap,
+    ) -> BankWeight {
+        let mut voted_stakes = HashMap::new();
+        let total_stake = bank.total_epoch_stake();
+        
+        // 遍历所有投票账户
+        for (vote_pubkey, (stake, vote_account)) in bank.vote_accounts() {
+            if let Some(vote_state) = VoteState::from(&vote_account) {
+                for vote in &vote_state.votes {
+                    let slot_stake = voted_stakes.entry(vote.slot).or_insert(0);
+                    *slot_stake += stake;
+                }
+            }
+        }
+        
+        // 计算当前分叉的权重
+        let mut fork_weight = 0u64;
+        for ancestor in bank.ancestors.keys() {
+            if let Some(stake) = voted_stakes.get(ancestor) {
+                fork_weight += stake;
+            }
+        }
+        
+        BankWeight { 
+            fork_weight,
+            fork_stake: voted_stakes,
+            total_stake,
+        }
+    }
+}</code></pre>
+                <ul>
+                    <li>选择最重分叉</li>
+                    <li>权益加权计算</li>
+                    <li>考虑锁定期影响</li>
+                    <li>保证分叉收敛</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>3. 确认机制</h3>
+                <div class="alert alert-success">
+                    <strong>确认规则：</strong> 区块需要获得超过2/3权益的投票才能被确认。
+                </div>
+                <ul>
+                    <li>乐观确认：2/3权益投票</li>
+                    <li>最终确认：32个连续投票</li>
+                    <li>防止双花攻击</li>
+                    <li>保证交易终局性</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Leader Schedule -->
+        <div class="content">
+            <h2>👑 领导者调度</h2>
+            
+            <div class="pipeline-section">
+                <h3>1. 调度算法</h3>
+                <pre><code>// 文件: runtime/src/leader_schedule.rs
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaChaRng;
+use solana_sdk::pubkey::Pubkey;
+
+pub const NUM_CONSECUTIVE_LEADER_SLOTS: usize = 4;
+
+impl LeaderSchedule {
+    pub fn new(
+        vote_accounts: &VoteAccounts,
+        epoch_schedule: &EpochSchedule,
+        epoch: Epoch,
+    ) -> Self {
+        let stakes: Vec<(Pubkey, u64)> = vote_accounts
+            .iter()
+            .map(|(pubkey, (stake, _))| (*pubkey, *stake))
+            .collect();
+            
+        // 使用epoch作为随机种子
+        let mut seed = [0u8; 32];
+        seed[0..8].copy_from_slice(&epoch.to_le_bytes());
+        let mut rng = ChaChaRng::from_seed(seed);
+        
+        let total_stake: u64 = stakes.iter().map(|(_, stake)| *stake).sum();
+        let slots_in_epoch = epoch_schedule.get_slots_in_epoch(epoch);
+        
+        let mut schedule = Vec::with_capacity(slots_in_epoch as usize);
+        
+        // 为每个槽分配领导者
+        for slot_index in 0..slots_in_epoch {
+            let mut cumulative_stake = 0u64;
+            let target = rng.gen_range(0..total_stake);
+            
+            for (pubkey, stake) in &stakes {
+                cumulative_stake += stake;
+                if cumulative_stake > target {
+                    schedule.push(*pubkey);
+                    break;
+                }
+            }
+        }
+        
+        LeaderSchedule::new_from_schedule(schedule)
+    }
+}</code></pre>
+                <ul>
+                    <li>每个epoch重新计算</li>
+                    <li>基于权益加权随机</li>
+                    <li>提前一个epoch确定</li>
+                    <li>保证公平性</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>2. 时间槽分配</h3>
+                <pre><code>// 文件: sdk/src/epoch_schedule.rs
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EpochSchedule {
+    /// 每个epoch的槽数
+    pub slots_per_epoch: u64,
+    /// 领导者调度计算的偏移量  
+    pub leader_schedule_slot_offset: u64,
+    /// 是否启用预热期
+    pub warmup: bool,
+    /// 第一个正常长度的epoch
+    pub first_normal_epoch: Epoch,
+    /// 第一个正常槽
+    pub first_normal_slot: Slot,
+}
+
+impl EpochSchedule {
+    pub fn new(slots_per_epoch: u64) -> Self {
+        Self {
+            slots_per_epoch,
+            leader_schedule_slot_offset: slots_per_epoch,
+            warmup: true,
+            first_normal_epoch: 0,
+            first_normal_slot: 0,
+        }
+    }
+    
+    /// 获取指定槽的epoch信息
+    pub fn get_epoch_and_slot_index(&self, slot: Slot) -> (Epoch, SlotIndex) {
+        if slot < self.first_normal_slot {
+            // 预热期计算
+            let epoch = (slot + MINIMUM_SLOTS_PER_EPOCH + 1)
+                .next_power_of_two()
+                .trailing_zeros() - MINIMUM_SLOTS_PER_EPOCH.trailing_zeros() - 1;
+            let epoch_len = 2_u64.pow(epoch) * MINIMUM_SLOTS_PER_EPOCH;
+            let slot_index = slot - (epoch_len - MINIMUM_SLOTS_PER_EPOCH);
+            (epoch as u64, slot_index)
+        } else {
+            // 正常期计算
+            let normal_slot_index = slot - self.first_normal_slot;
+            let normal_epoch_index = normal_slot_index / self.slots_per_epoch;
+            let epoch = self.first_normal_epoch + normal_epoch_index;
+            let slot_index = normal_slot_index % self.slots_per_epoch;
+            (epoch, slot_index)
+        }
+    }
+}</code></pre>
+                <ul>
+                    <li>每个领导者4个连续槽</li>
+                    <li>槽位固定时长400ms</li>
+                    <li>错过槽位自动跳过</li>
+                    <li>防止单点故障</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>3. 安全保障</h3>
+                <div class="alert alert-info">
+                    <strong>设计原则：</strong> 通过随机性和权益约束确保领导者行为的公平性和安全性。
+                </div>
+                <ul>
+                    <li>防止预测性攻击</li>
+                    <li>权益惩罚机制</li>
+                    <li>快速故障恢复</li>
+                    <li>分布式容错</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Voting Mechanism -->
+        <div class="content">
+            <h2>🗳️ 投票机制</h2>
+            
+            <div class="pipeline-section">
+                <h3>1. 投票流程</h3>
+                <pre><code>// 文件: programs/vote/src/vote_state.rs
+use solana_sdk::clock::Slot;
+use solana_sdk::hash::Hash;
+use solana_sdk::pubkey::Pubkey;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct VoteState {
+    /// 投票账户的授权者
+    pub authorized_voter: Pubkey,
+    /// 投票历史记录
+    pub votes: VecDeque<Lockout>,
+    /// 根槽 - 已最终确认的槽
+    pub root_slot: Option<Slot>,
+    /// 最后时间戳
+    pub last_timestamp: BlockTimestamp,
+    /// epoch积分
+    pub epoch_credits: Vec<(Epoch, u64, u64)>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Lockout {
+    /// 投票的槽
+    pub slot: Slot,
+    /// 确认计数（指数增长）
+    pub confirmation_count: u32,
+}
+
+impl Lockout {
+    pub fn new(slot: Slot) -> Self {
+        Self {
+            slot,
+            confirmation_count: 1,
+        }
+    }
+    
+    /// 计算锁定期（2^confirmation_count）
+    pub fn lockout(&self) -> u64 {
+        2_u64.pow(self.confirmation_count)
+    }
+    
+    /// 计算过期槽
+    pub fn expiration_slot(&self) -> Slot {
+        self.slot + self.lockout()
+    }
+}</code></pre>
+                <ul>
+                    <li>验证区块有效性</li>
+                    <li>生成投票交易</li>
+                    <li>广播到网络</li>
+                    <li>等待确认</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>2. 投票确认</h3>
+                <pre><code>// 文件: sdk/src/commitment_config.rs
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum CommitmentLevel {
+    /// 已处理但可能被回滚
+    Processed,
+    /// 获得多数确认，很可能最终确认
+    Confirmed,
+    /// 经过32个确认，达到最大锁定期
+    Finalized,
+}
+
+// 文件: rpc/src/rpc_subscriptions.rs
+impl RpcSubscriptions {
+    /// 检查槽的确认状态
+    pub fn check_commitment_and_notify(
+        &self,
+        slot: Slot,
+        bank: &Bank,
+        commitment: CommitmentSlots,
+    ) {
+        // 处理已被处理的槽
+        if commitment.slot <= slot {
+            self.notify_subscribers(slot, &bank, CommitmentLevel::Processed);
+        }
+        
+        // 检查确认状态
+        if let Some(confirmed_slot) = commitment.confirmed_slot {
+            if confirmed_slot <= slot {
+                self.notify_subscribers(slot, &bank, CommitmentLevel::Confirmed);
+            }
+        }
+        
+        // 检查最终确认
+        if let Some(finalized_slot) = commitment.finalized_slot {
+            if finalized_slot <= slot {
+                self.notify_subscribers(slot, &bank, CommitmentLevel::Finalized);
+            }
+        }
+    }
+}</code></pre>
+                <ul>
+                    <li>处理：交易已包含在区块中</li>
+                    <li>确认：获得2/3权益投票</li>
+                    <li>最终确认：32个连续投票</li>
+                    <li>不同确认级别满足不同安全需求</li>
+                </ul>
+            </div>
+
+            <div class="pipeline-section">
+                <h3>3. 奖励机制</h3>
+                <div class="alert alert-success">
+                    <strong>激励机制：</strong> 通过通胀奖励和交易费用激励验证者参与共识。
+                </div>
+                <ul>
+                    <li>区块奖励</li>
+                    <li>投票奖励</li>
+                    <li>交易费分成</li>
+                    <li>惩罚机制</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Security Considerations -->
+        <div class="content">
+            <h2>🔒 安全性考虑</h2>
+            
+            <div class="optimization-section">
+                <h3>1. 拜占庭容错</h3>
+                <div class="alert alert-info">
+                    <strong>容错能力：</strong> 系统可以容忍不超过1/3的恶意节点。
+                </div>
+                <ul>
+                    <li>超过2/3节点诚实</li>
+                    <li>少于1/3节点作恶</li>
+                    <li>安全阈值保证</li>
+                    <li>快速故障恢复</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. 攻击防护</h3>
+                <div class="alert alert-warning">
+                    <strong>防护机制：</strong> 多层次的安全防护确保系统稳定性。
+                </div>
+                <ul>
+                    <li>双花攻击防护</li>
+                    <li>长程攻击防护</li>
+                    <li>女巫攻击防护</li>
+                    <li>DDoS攻击防护</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. 经济安全</h3>
+                <div class="alert alert-success">
+                    <strong>激励相容：</strong> 经济激励机制确保参与者遵守协议规则。
+                </div>
+                <ul>
+                    <li>权益抵押要求</li>
+                    <li>作恶惩罚机制</li>
+                    <li>奖励分配机制</li>
+                    <li>长期激励</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Configuration Examples -->
+        <div class="content">
+            <h2>⚙️ 配置示例</h2>
+            
+            <div class="optimization-section">
+                <h3>1. 验证器投票配置</h3>
+                <pre><code>// 文件: validator/src/main.rs
+// 启动验证器时的投票相关配置
+let validator_config = ValidatorConfig {
+    // 投票账户
+    vote_account: vote_account_keypair.pubkey(),
+    // 授权投票者
+    authorized_voter_keypairs: vec![authorized_voter_keypair],
+    // 投票程序ID
+    vote_program_id: solana_vote_program::id(),
+    // Tower存储路径
+    tower_storage: Arc::new(FileTowerStorage::new(tower_path)),
+    // 预期银行哈希
+    expected_bank_hash: None,
+    // 等待投票确认
+    wait_for_supermajority: Some(wait_for_supermajority_slot),
+    ..ValidatorConfig::default()
+};</code></pre>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. 共识参数配置</h3>
+                <pre><code>// 文件: runtime/src/genesis_utils.rs  
+pub fn create_genesis_config_with_vote_accounts(
+    mint_lamports: u64,
+    voting_keypairs: &[VotingKeypair],
+    stakes: Vec<u64>,
+) -> GenesisConfig {
+    let mut genesis_config = GenesisConfig {
+        accounts: AccountsMap::new(),
+        // Proof of History配置
+        poh_config: PohConfig {
+            target_tick_duration: Duration::from_micros(6_250), // 160 ticks/slot
+            target_tick_count: Some(8), // dev模式下较小值
+            hashes_per_tick: Some(4),
+        },
+        // 费用配置  
+        fee_rate_governor: FeeRateGovernor::new(5000, 0),
+        // 租金配置
+        rent: Rent::default(),
+        // epoch调度
+        epoch_schedule: EpochSchedule::default(),
+        // 通胀配置
+        inflation: Inflation::default(),
+        ..GenesisConfig::default()
+    };
+    
+    // 创建投票账户
+    for (voting_keypair, stake) in voting_keypairs.iter().zip(stakes) {
+        let vote_account = Account::new_data(
+            stake,
+            &VoteState::default(),
+            &solana_vote_program::id(),
+        ).unwrap();
+        
+        genesis_config.accounts.insert(
+            voting_keypair.vote_keypair.pubkey(),
+            vote_account,
+        );
+    }
+    
+    genesis_config
+}</code></pre>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. Tower配置文件</h3>
+                <pre><code>// 文件: core/src/consensus/tower_storage.rs
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SavedTower {
+    pub signature: Signature,
+    pub data: SavedTowerVersions,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum SavedTowerVersions {
+    V1_14_14(SavedTowerV1_14_14),
+    Current(SavedTowerV1_17_14),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SavedTowerV1_17_14 {
+    pub node_pubkey: Pubkey,
+    pub threshold_depth: usize,
+    pub threshold_size: f64,
+    pub vote_state_timestamps: HashMap<Slot, UnixTimestamp>,
+    pub last_vote: Vote,
+    pub last_vote_tx_blockhash: Hash,
+    pub last_vote_bankhash: Hash,
+    pub shred_version: u16,
+    pub wallclock: u64,
+}
+
+// Tower配置示例JSON
+/*
+{
+  "signature": "4fX2nJ8...",
+  "data": {
+    "Current": {
+      "node_pubkey": "5QqK9zwSwn5h7JdNb...",
+      "threshold_depth": 8,
+      "threshold_size": 0.67,
+      "vote_state_timestamps": {
+        "12345": 1647894123,
+        "12346": 1647894523
+      },
+      "last_vote": {
+        "slots": [12346, 12347],
+        "hash": "8WzQS4bz...",
+        "timestamp": 1647894523
+      },
+      "shred_version": 1,
+      "wallclock": 1647894523000000
+    }
+  }
+}
+*/</code></pre>
+            </div>
+        </div>
+
+        <!-- Future Improvements -->
+        <div class="content">
+            <h2>🔮 未来改进</h2>
+            
+            <div class="optimization-section">
+                <h3>1. 性能优化</h3>
+                <ul>
+                    <li>提升交易吞吐量</li>
+                    <li>降低确认延迟</li>
+                    <li>优化网络传输</li>
+                    <li>改进存储效率</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>2. 安全增强</h3>
+                <ul>
+                    <li>引入程序化惩罚</li>
+                    <li>改进分叉选择</li>
+                    <li>增强攻击防护</li>
+                    <li>优化投票机制</li>
+                </ul>
+            </div>
+
+            <div class="optimization-section">
+                <h3>3. 去中心化提升</h3>
+                <ul>
+                    <li>降低验证门槛</li>
+                    <li>优化权益分布</li>
+                    <li>改进治理机制</li>
+                    <li>增强社区参与</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Agave验证器文档中心 • 为Solana生态开发和验证器运营而创建</p>
+            <p>🌪️ 助力构建高性能区块链网络，支撑Web3未来</p>
+        </footer>
+
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle" id="themeToggle" aria-label="切换深色模式">
+            🌓
+        </button>
+    </div>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const sections = document.querySelectorAll('.content, .pipeline-section, .optimization-section');
+            
+            sections.forEach(section => {
+                const text = section.textContent.toLowerCase();
+                if (text.includes(searchTerm) || searchTerm === '') {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        });
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        }
+
+        // 初始化主题
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && prefersDarkScheme.matches)) {
+            document.body.classList.add('dark-theme');
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+        prefersDarkScheme.addListener((e) => {
+            if (!localStorage.getItem('theme')) {
+                if (e.matches) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+            }
+        });
+
+        // Enhanced copy functionality to code blocks with file paths
+        document.querySelectorAll('pre code').forEach(block => {
+            // Add copy button
+            const copyButton = document.createElement('button');
+            copyButton.className = 'copy-button';
+            copyButton.textContent = '复制';
+            copyButton.style.cssText = `
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                background: var(--primary-purple);
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 4px 8px;
+                font-size: 12px;
+                cursor: pointer;
+                opacity: 0;
+                transition: opacity 0.3s;
+            `;
+            
+            const pre = block.parentElement;
+            pre.style.position = 'relative';
+            pre.appendChild(copyButton);
+            
+            // Show/hide copy button on hover
+            pre.addEventListener('mouseenter', () => copyButton.style.opacity = '1');
+            pre.addEventListener('mouseleave', () => copyButton.style.opacity = '0');
+            
+            copyButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                navigator.clipboard.writeText(block.textContent).then(() => {
+                    copyButton.textContent = '已复制!';
+                    copyButton.style.background = 'var(--success-green)';
+                    setTimeout(() => {
+                        copyButton.textContent = '复制';
+                        copyButton.style.background = 'var(--primary-purple)';
+                    }, 2000);
+                });
+            });
+        });
+
+        // Highlight file paths in code blocks
+        document.querySelectorAll('pre code').forEach(block => {
+            let html = block.innerHTML;
+            // Highlight file paths (starting with //)
+            html = html.replace(/(\/\/ 文件: [^\n]+)/g, '<span style="color: var(--secondary-orange); font-weight: bold;">$1</span>');
+            // Highlight struct/impl keywords
+            html = html.replace(/\b(struct|impl|enum|fn|pub|use|mod)\b/g, '<span style="color: var(--accent-teal); font-weight: bold;">$1</span>');
+            block.innerHTML = html;
+        });
+
+        // Add loading indicator for navigation
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!this.href.startsWith('#')) {
+                    const loading = document.createElement('div');
+                    loading.className = 'loading';
+                    this.appendChild(loading);
+                }
+            });
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

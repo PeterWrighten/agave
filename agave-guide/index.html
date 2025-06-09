@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agave Validator Documentation Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌪️</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="text" class="search-bar" placeholder="搜索文档..." id="searchInput">
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <h1>🌪️ Agave Validator Documentation</h1>
+            <p class="subtitle">Solana高性能验证器客户端的完整指南</p>
+        </header>
+
+        <!-- Navigation Grid -->
+        <div class="nav-grid" id="navGrid">
+            <!-- Setup Guide -->
+            <a href="setup.html" class="nav-card" data-keywords="环境配置 构建 编译 依赖 macOS Linux">
+                <span class="icon">⚡</span>
+                <h3>环境设置</h3>
+                <p>完整的构建环境配置，包括macOS和Linux平台的详细设置指南</p>
+                <span class="badge">快速开始</span>
+            </a>
+
+            <!-- Architecture Guide -->
+            <a href="architecture.html" class="nav-card" data-keywords="架构 TPU TVU SVM 账户数据库 流水线">
+                <span class="icon">🏗️</span>
+                <h3>架构深度解析</h3>
+                <p>TPU/TVU流水线、SVM运行时、账户数据库等核心组件的技术细节</p>
+                <span class="badge">核心技术</span>
+            </a>
+
+            <!-- Commands Reference -->
+            <a href="commands.html" class="nav-card" data-keywords="命令 CLI 工具 调试 测试">
+                <span class="icon">🔧</span>
+                <h3>命令参考</h3>
+                <p>验证器操作、测试、调试的完整命令清单和使用示例</p>
+                <span class="badge">工具手册</span>
+            </a>
+
+            <!-- Consensus & Protocol -->
+            <a href="consensus.html" class="nav-card" data-keywords="共识 PoH Tower BFT 领导者调度">
+                <span class="icon">🔗</span>
+                <h3>共识机制</h3>
+                <p>领导者轮换、Tower BFT、Proof of History时间戳机制详解</p>
+                <span class="badge">共识算法</span>
+            </a>
+
+            <!-- Performance Tuning -->
+            <a href="performance.html" class="nav-card" data-keywords="性能 优化 调优 配置 故障排除">
+                <span class="icon">⚙️</span>
+                <h3>性能优化</h3>
+                <p>中央调度器、内存优化、网络配置和故障排除技巧</p>
+                <span class="badge">高级配置</span>
+            </a>
+
+            <!-- Development Guide -->
+            <a href="development.html" class="nav-card" data-keywords="开发 贡献 测试 插件 调试">
+                <span class="icon">💻</span>
+                <h3>开发指南</h3>
+                <p>贡献代码、测试流程、Geyser插件开发和调试技术</p>
+                <span class="badge">开发者</span>
+            </a>
+        </div>
+
+        <!-- Quick Commands Section -->
+        <div class="content">
+            <h2>🚀 快速命令</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 10px;">
+                    <h3>⚡ 构建与测试</h3>
+                    <pre><code># 设置环境变量 (macOS)
+export DYLD_LIBRARY_PATH="/opt/homebrew/lib"
+export PATH="/opt/homebrew/bin:$PATH"
+
+# 构建基础组件
+cargo build --release --bin solana
+cargo test --package solana-core</code></pre>
+                </div>
+                
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 10px;">
+                    <h3>🏃 运行验证器</h3>
+                    <pre><code># 生成身份密钥
+./target/release/solana-keygen new
+
+# 启动测试验证器
+./target/release/solana-test-validator \
+  --block-production-method central-scheduler</code></pre>
+                </div>
+                
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 10px;">
+                    <h3>📊 监控状态</h3>
+                    <pre><code># 查看验证器状态
+./target/release/solana validators
+./target/release/solana catchup
+
+# 监控网络健康
+./target/release/solana ping</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documentation Overview -->
+        <div class="content">
+            <h2>📚 文档概览</h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin: 20px 0;">
+                <!-- Setup Guide -->
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 10px; border-left: 4px solid #8A2BE2;">
+                    <h3><a href="setup.html" style="text-decoration: none; color: var(--text-primary);">⚡ 环境设置</a></h3>
+                    <ul style="margin: 10px 0; font-size: 14px;">
+                        <li>macOS Apple Silicon配置</li>
+                        <li>libclang.dylib问题解决</li>
+                        <li>Rust工具链安装</li>
+                        <li>RocksDB依赖配置</li>
+                    </ul>
+                </div>
+
+                <!-- Architecture -->
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 10px; border-left: 4px solid #FF6B35;">
+                    <h3><a href="architecture.html" style="text-decoration: none; color: var(--text-primary);">🏗️ 架构解析</a></h3>
+                    <ul style="margin: 10px 0; font-size: 14px;">
+                        <li>TPU/TVU流水线设计</li>
+                        <li>SVM并行执行引擎</li>
+                        <li>AccountsDB存储层</li>
+                        <li>网络协议栈</li>
+                    </ul>
+                </div>
+
+                <!-- Commands -->
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 10px; border-left: 4px solid #28a745;">
+                    <h3><a href="commands.html" style="text-decoration: none; color: var(--text-primary);">🔧 命令参考</a></h3>
+                    <ul style="margin: 10px 0; font-size: 14px;">
+                        <li>验证器管理命令</li>
+                        <li>密钥生成与管理</li>
+                        <li>网络连接工具</li>
+                        <li>性能分析工具</li>
+                    </ul>
+                </div>
+
+                <!-- Consensus -->
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 10px; border-left: 4px solid #17a2b8;">
+                    <h3><a href="consensus.html" style="text-decoration: none; color: var(--text-primary);">🔗 共识机制</a></h3>
+                    <ul style="margin: 10px 0; font-size: 14px;">
+                        <li>Proof of History时间戳</li>
+                        <li>Tower BFT共识</li>
+                        <li>领导者调度算法</li>
+                        <li>投票签名机制</li>
+                    </ul>
+                </div>
+
+                <!-- Performance -->
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 10px; border-left: 4px solid #fd7e14;">
+                    <h3><a href="performance.html" style="text-decoration: none; color: var(--text-primary);">⚙️ 性能优化</a></h3>
+                    <ul style="margin: 10px 0; font-size: 14px;">
+                        <li>中央调度器配置</li>
+                        <li>内存与缓存优化</li>
+                        <li>QUIC网络调优</li>
+                        <li>故障诊断方法</li>
+                    </ul>
+                </div>
+
+                <!-- Development -->
+                <div style="background: var(--bg-secondary); padding: 20px; border-radius: 10px; border-left: 4px solid #6f42c1;">
+                    <h3><a href="development.html" style="text-decoration: none; color: var(--text-primary);">💻 开发指南</a></h3>
+                    <ul style="margin: 10px 0; font-size: 14px;">
+                        <li>代码贡献流程</li>
+                        <li>测试框架使用</li>
+                        <li>Geyser插件开发</li>
+                        <li>调试技术与工具</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Status -->
+        <div class="content">
+            <h2>🎯 Agave验证器状态</h2>
+            <p>Agave是由Anza开发的Solana高性能验证器客户端，专为大规模交易处理和低延迟共识设计。关键特性：</p>
+            <div class="alert alert-info">
+                <strong>✅ 高并发处理:</strong> TPU/TVU流水线支持50,000+TPS的交易处理能力
+            </div>
+            <div class="alert alert-success">
+                <strong>⚡ 中央调度器:</strong> v1.18引入的新调度机制，显著提升交易执行效率
+            </div>
+            <div class="alert alert-warning">
+                <strong>🔧 持续优化:</strong> Firedancer客户端即将推出，性能将进一步提升
+            </div>
+            <ul>
+                <li><strong>技术架构:</strong> 基于Rust的高性能并行执行引擎</li>
+                <li><strong>共识机制:</strong> Proof of History + Tower BFT混合共识</li>
+                <li><strong>网络协议:</strong> QUIC/UDP高速网络传输</li>
+                <li><strong>存储层:</strong> RocksDB优化的账户数据库</li>
+            </ul>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Agave验证器文档中心 • 为Solana生态开发和验证器运营而创建</p>
+            <p>🌪️ 助力构建高性能区块链网络，支撑Web3未来</p>
+        </footer>
+
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle" id="themeToggle" aria-label="切换深色模式">
+            🌓
+        </button>
+    </div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        }
+
+        // 初始化主题
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && prefersDarkScheme.matches)) {
+            document.body.classList.add('dark-theme');
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+        prefersDarkScheme.addListener((e) => {
+            if (!localStorage.getItem('theme')) {
+                if (e.matches) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+            }
+        });
+
+        // Search Functionality
+        const searchInput = document.getElementById('searchInput');
+        const navGrid = document.getElementById('navGrid');
+        const navCards = document.querySelectorAll('.nav-card');
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function performSearch() {
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            navCards.forEach(card => {
+                const keywords = card.getAttribute('data-keywords').toLowerCase();
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const description = card.querySelector('p').textContent.toLowerCase();
+                
+                const isMatch = keywords.includes(searchTerm) || 
+                              title.includes(searchTerm) || 
+                              description.includes(searchTerm);
+                
+                if (searchTerm === '') {
+                    card.style.display = '';
+                    card.classList.remove('fade-enter');
+                } else {
+                    if (isMatch) {
+                        card.style.display = '';
+                        card.classList.add('fade-enter');
+                        setTimeout(() => card.classList.add('fade-enter-active'), 10);
+                    } else {
+                        card.style.display = 'none';
+                        card.classList.remove('fade-enter', 'fade-enter-active');
+                    }
+                }
+            });
+        }
+
+        const debouncedSearch = debounce(performSearch, 300);
+        searchInput.addEventListener('input', debouncedSearch);
+
+        // Add copy functionality to code blocks
+        document.querySelectorAll('pre code').forEach(block => {
+            block.addEventListener('click', function() {
+                navigator.clipboard.writeText(this.textContent).then(() => {
+                    const pre = this.parentElement;
+                    const originalBorder = pre.style.borderColor;
+                    pre.style.borderColor = 'var(--success-green)';
+                    setTimeout(() => {
+                        pre.style.borderColor = originalBorder;
+                    }, 1000);
+                });
+            });
+        });
+
+        // Add loading indicator for navigation
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!this.href.startsWith('#')) {
+                    const loading = document.createElement('div');
+                    loading.className = 'loading';
+                    this.appendChild(loading);
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
