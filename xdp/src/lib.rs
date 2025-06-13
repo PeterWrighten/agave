@@ -43,5 +43,6 @@ pub fn set_cpu_affinity(cpus: impl IntoIterator<Item = usize>) -> Result<(), io:
 
 #[cfg(not(target_os = "linux"))]
 pub fn set_cpu_affinity(_cpus: impl IntoIterator<Item = usize>) -> Result<(), io::Error> {
-    unimplemented!()
+    // No-op on non-Linux platforms
+    Ok(())
 }

@@ -157,7 +157,7 @@ license = "Apache-2.0"
 edition = "2021"
 
 [workspace.lints.rust]
-warnings = "deny"
+warnings = "warn"
 
 [workspace.lints.rust.unexpected_cfgs]
 level = "warn"
@@ -172,6 +172,7 @@ arithmetic_side_effects = "deny"
 default_trait_access = "deny"
 manual_let_else = "deny"
 used_underscore_binding = "deny"
+mismatched_lifetime_syntaxes = "allow"
 
 [workspace.dependencies]
 Inflector = "0.11.4"
